@@ -51,9 +51,9 @@ FROM swaggerapi/swagger-ui
 
 ENV EXTRA_PKG curl jq bash vim
 
-ENV BASE_URL ""
+ENV BASE_URL "/"
 ENV SWAGGER_JSON "/usr/share/nginx/html/swagger.json"
-ENV PORT 80
+ENV PORT 8080
 
 RUN apk add --no-cache $EXTRA_PKG
 
@@ -69,17 +69,19 @@ COPY --from=cosmos-build /go/bin/gaiacli /usr/bin/gaiacli
 # Copy default config and genesis
 COPY config/config.toml /usr/src/app
 COPY config/genesis.json /usr/src/app
-COPY config/swagger.json /usr/share/nginx/html/
-COPY config/index.html /usr/share/nginx/html/
-COPY config/nginx.conf /etc/nginx/
+#COPY config/swagger.json /usr/share/nginx/html/
+#COPY config/index.html /usr/share/nginx/html/
+#COPY config/nginx.conf /etc/nginx/
 
 #  Copy startup scripts
 ##############################################################################
 COPY start_script.sh /usr/bin/start_script.sh
+COPY start_rest.sh /usr/bin/start_rest.sh
 RUN chmod +x /usr/bin/start_script.sh
+RUN chmod +x /usr/bin/start_rest.sh
 
 #  Start
 ###############################################################################
 # Run gaiad by default, omit entrypoint to ease using container with gaiacli
-EXPOSE 26656 26657 1317 80
+EXPOSE 26656 26657 1317 8080 80
 ENTRYPOINT start_script.sh
