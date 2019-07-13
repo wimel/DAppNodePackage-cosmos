@@ -40,10 +40,10 @@ RUN git clone --branch master https://github.com/luniehq/lunie.git
 
 # Build the Lunie APP
 RUN cd lunie \
-    && sed -i '/"connect-src"/a \          `http://cosmos.public.dappnode`, \n \         `ws://cosmos.public.dappnode:26657`,' webpack.config.js \
+    && sed -i '/"connect-src"/a \          `https://cosmos.public.dappnode`, \n \         `wss://cosmos.public.dappnode:26657`,' webpack.config.js \
     && yarn install \
     && npm install \
-    && STARGATE="http://cosmos.public.dappnode" RPC="http://cosmos.public.dappnode:26657" yarn build:ui
+    && STARGATE="https://cosmos.public.dappnode" RPC="https://cosmos.public.dappnode:26657" yarn build:ui
 
 ########## LAST STAGE #########
 #FROM nginx:alpine
@@ -53,7 +53,7 @@ ENV EXTRA_PKG curl jq bash vim
 
 ENV BASE_URL ""
 ENV SWAGGER_JSON "/usr/share/nginx/html/swagger.json"
-ENV PORT 80
+ENV PORT 443
 
 RUN apk add --no-cache $EXTRA_PKG
 
@@ -63,24 +63,20 @@ RUN mkdir /usr/share/nginx/html/lunie
 COPY --from=lunie-build /usr/src/app/lunie/dist /usr/share/nginx/html/lunie
 
 # Copy over binaries from the build
-COPY --from=cosmos-build /go/bin/gaiad /usr/bin/gaiad
-COPY --from=cosmos-build /go/bin/gaiacli /usr/bin/gaiacli
+COPY --from=cosmos-build /go/bin/gaiad /go/bin/gaiacli /usr/bin/
 
 # Copy default config and genesis
-COPY config/config.toml /usr/src/app
-COPY config/genesis.json /usr/src/app
-COPY config/swagger.json /usr/share/nginx/html/
-COPY config/index.html /usr/share/nginx/html/
-COPY config/nginx.conf /etc/nginx/
+COPY config/config.toml config/genesis.json config/tls.crt config/tls.key ./
+COPY config/swagger.json config/index.html /usr/share/nginx/html/
+COPY config/nginx.conf /etc/nginx/nginx.conf
 
 #  Copy startup scripts
 ##############################################################################
-COPY start_script.sh /usr/bin/start_script.sh
-COPY start_rest.sh /usr/bin/start_rest.sh
+COPY start_script.sh start_rest.sh /usr/bin/
 RUN chmod +x /usr/bin/start_script.sh
 
 #  Start
 ###############################################################################
 # Run gaiad by default, omit entrypoint to ease using container with gaiacli
-EXPOSE 26656 26657 1317 80 8080
+EXPOSE 26656 26657 1317 443
 ENTRYPOINT start_script.sh
